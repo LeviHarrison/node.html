@@ -6,13 +6,16 @@ use std::path::Path;
 use html5ever::parse_document;
 use html5ever::tendril::*;
 use html5ever::tree_builder::{
-    AppendNode, AppendText, ElementFlags, NodeOrText, QuirksMode, TreeSink,
+    AppendNode, AppendText, ElementFlags, NodeOrText, QuirksMode, TreeBuilderOpts, TreeSink,
 };
-use html5ever::{expanded_name, local_name, namespace_url, ns, Attribute, ExpandedName, QualName};
+use html5ever::{
+    expanded_name, local_name, namespace_url, ns, Attribute, ExpandedName, ParseOpts, QualName,
+};
 
 struct Sink {
     next_id: usize,
     names: HashMap<usize, QualName>,
+    line: u64,
 }
 
 impl Sink {
@@ -26,13 +29,20 @@ impl Sink {
 impl TreeSink for Sink {
     type Handle = usize;
     type Output = Self;
+
     fn finish(self) -> Self {
         println!("done");
         self
     }
 
     fn parse_error(&mut self, msg: Cow<'static, str>) {
-        println!("Parse error: {}", msg);
+        match msg {
+            Cow::Borrowed("Bad DOCTYPE") => println!("Not bad doctype"),
+            _ => {
+                eprintln!("Error Parsing on line {}", self.line - 1);
+                std::process::exit(1)
+            }
+        }
     }
 
     fn get_document(&mut self) -> usize {
@@ -60,9 +70,14 @@ impl TreeSink for Sink {
         self.names.get(target).expect("not an element").expanded()
     }
 
-    fn create_element(&mut self, name: QualName, _: Vec<Attribute>, _: ElementFlags) -> usize {
+    fn create_element(
+        &mut self,
+        name: QualName,
+        attributes: Vec<Attribute>,
+        _: ElementFlags,
+    ) -> usize {
         let id = self.get_id();
-        println!("Created {:?} as {}", name, id);
+        println!("Created {:?} as {} with {:#?}", name, id, attributes);
         self.names.insert(id, name);
         id
     }
@@ -81,7 +96,11 @@ impl TreeSink for Sink {
     fn append(&mut self, parent: &usize, child: NodeOrText<usize>) {
         match child {
             AppendNode(n) => println!("Append node {} to {}", n, parent),
-            AppendText(t) => println!("Append text to {}: \"{}\"", parent, escape_default(&t)),
+            AppendText(t) => println!(
+                "Append text to {:#?}: \"{}\"",
+                self.names[parent],
+                escape_default(&t)
+            ),
         }
     }
 
@@ -141,6 +160,7 @@ impl TreeSink for Sink {
 
     fn set_current_line(&mut self, line_number: u64) {
         println!("Set current line to {}", line_number);
+        self.line = line_number;
     }
 
     fn pop(&mut self, elem: &usize) {
@@ -157,8 +177,15 @@ fn main() {
     let sink = Sink {
         next_id: 1,
         names: HashMap::new(),
+        line: 0,
     };
-    parse_document(sink, Default::default())
+    let opts = ParseOpts {
+        tree_builder: TreeBuilderOpts {
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    parse_document(sink, opts)
         .from_utf8()
         .from_file(Path::new("test.html"))
         .unwrap();
