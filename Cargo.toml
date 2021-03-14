@@ -1,11 +1,5 @@
-[package]
-name = "node-html"
-version = "0.1.0"
-authors = ["Levi Harrison <levisamuelharrison@gmail.com>"]
-edition = "2018"
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-html5ever = "0.25.1"
-markup5ever_arcdom = "0.1.1"
+members = [
+    "nodeh",
+]
