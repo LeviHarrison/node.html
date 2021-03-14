@@ -11,14 +11,15 @@ use html5ever::{
 
 type Handle = usize;
 
+#[derive(Debug)]
 struct Element {
     element_name: String,
+    attributes: HashMap<String, String>,
+    is_func: bool,
     parent: Handle,
-    parent_func: Handle,
     qual_name: QualName,
 }
 
-#[derive(Default)]
 pub struct Parser {
     next_id: Handle,
     line: u64,
@@ -75,10 +76,12 @@ impl TreeSink for Parser {
         let id = self.get_id();
         let element = Element {
             element_name: name.local.to_string(),
+            attributes: get_attributes(attrs),
+            is_func: false,
             parent: 0,
-            parent_func: 0,
             qual_name: name,
         };
+        println!("{:#?}", element);
         self.elements.insert(id, element);
         id
     }
@@ -130,4 +133,13 @@ impl TreeSink for Parser {
     fn set_current_line(&mut self, _line_number: u64) {
         self.line = _line_number;
     }
+}
+
+fn get_attributes(attrs: Vec<Attribute>) -> HashMap<String, String> {
+    let mut attributes: HashMap<String, String> = HashMap::new();
+
+    for attr in attrs {
+        attributes.insert(attr.name.local.to_string(), attr.value.to_string());
+    }
+    attributes
 }
