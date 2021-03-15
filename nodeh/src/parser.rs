@@ -90,6 +90,7 @@ impl TreeSink for Parser {
     type Output = Self;
 
     fn finish(self) -> Self {
+        println!("{:#?}", self.nodes);
         self
     }
 
@@ -150,6 +151,7 @@ impl TreeSink for Parser {
                 };
 
                 self.nodes.insert(id, IsText(text));
+                self.add_child(id, parent);
             }
         }
     }
