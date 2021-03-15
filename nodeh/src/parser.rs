@@ -5,7 +5,7 @@ use html5ever::tendril::*;
 use html5ever::tree_builder::{
     AppendNode, AppendText, ElementFlags, NodeOrText, QuirksMode, TreeSink,
 };
-use html5ever::{Attribute, ExpandedName, QualName};
+use html5ever::{local_name, namespace_url, ns, Attribute, ExpandedName, QualName};
 
 use self::Node::{IsElement, IsText};
 
@@ -45,10 +45,22 @@ impl Parser {
     }
 
     pub fn new() -> Parser {
+        let mut new_nodes: HashMap<Handle, Node> = HashMap::new();
+        new_nodes.insert(
+            0,
+            IsElement(Element {
+                element_name: String::new(),
+                attributes: HashMap::new(),
+                is_func: false,
+                children: Vec::new(),
+                qual_name: QualName::new(None, ns!(html), local_name!("")),
+            }),
+        );
+
         Parser {
             next_id: 1,
             line: 0,
-            nodes: HashMap::new(),
+            nodes: new_nodes,
         }
     }
 
