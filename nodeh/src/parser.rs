@@ -14,8 +14,8 @@ use func::{empty, Func, Lib};
 type Handle = usize;
 
 #[derive(Clone)]
-pub enum Node {
-    IsElement(Element),
+pub enum Node<'a> {
+    IsElement(Element<'a>),
     IsText(Text),
 }
 
@@ -25,30 +25,30 @@ pub struct Text {
 }
 
 #[derive(Clone)]
-pub struct Element {
+pub struct Element<'a> {
     element_name: String,
     attributes: HashMap<String, String>,
     is_func: bool,
-    func: Func,
+    func: &'a Func,
     children: Vec<Handle>,
     qual_name: QualName,
 }
 
-pub struct Parser {
+pub struct Parser<'a> {
     next_id: Handle,
     line: u64,
-    nodes: HashMap<Handle, Node>,
+    nodes: HashMap<Handle, Node<'a>>,
     lib: Lib,
 }
 
-impl Parser {
+impl Parser<'_> {
     fn get_id(&mut self) -> Handle {
         let id = self.next_id;
         self.next_id += 2;
         id
     }
 
-    pub fn new(l: Lib) -> Parser {
+    pub fn new(l: Lib) -> Parser<'static> {
         let mut new_nodes: HashMap<Handle, Node> = HashMap::new();
         new_nodes.insert(
             0,
@@ -56,7 +56,7 @@ impl Parser {
                 element_name: String::new(),
                 attributes: HashMap::new(),
                 is_func: false,
-                func: empty(),
+                func: &empty(),
                 children: Vec::new(),
                 qual_name: QualName::new(None, ns!(html), local_name!("")),
             }),
@@ -88,6 +88,14 @@ impl Parser {
         revised_parent.children.push(child);
 
         self.revise_node(IsElement(revised_parent), *parent)
+    }
+
+    fn match_function(&self, element: &mut Element) {
+        for f in self.lib.iter() {
+            if f.name == element.element_name {
+                element.func = f
+            }
+        }
     }
 }
 
@@ -124,7 +132,7 @@ impl TreeSink for Parser {
 
     fn create_element(&mut self, name: QualName, attrs: Vec<Attribute>, _: ElementFlags) -> Handle {
         let id = self.get_id();
-        let element = Element {
+        let mut element = Element {
             element_name: name.local.to_string(),
             attributes: get_attributes(attrs),
             is_func: false,
