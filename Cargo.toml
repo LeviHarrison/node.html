@@ -2,4 +2,6 @@
 
 members = [
     "nodeh",
+		"stdlib",
+		"func"
 ]
