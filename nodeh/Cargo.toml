@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 stdlib = { path = "../stdlib" }
+func = { path = "../func" }
 
 html5ever = "0.25.1"
 markup5ever_arcdom = "0.1.1"

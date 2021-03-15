@@ -1,5 +1,20 @@
-use func::Handler;
+use func::{Argument, Func, Lib};
 
-struct Hello {}
+use std::collections::HashMap;
 
-impl Handler for Hello {}
+fn hello(_args: HashMap<String, Argument>) -> Result<i32, String> {
+    println!("Hello");
+    Ok(0)
+}
+
+pub fn register() -> Lib {
+    let mut lib = Vec::new();
+
+    lib.push(Func {
+        name: String::from("Hello"),
+        args: HashMap::new(),
+        handler: hello,
+    });
+
+    lib
+}

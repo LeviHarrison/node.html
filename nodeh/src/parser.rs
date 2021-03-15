@@ -9,24 +9,27 @@ use html5ever::{local_name, namespace_url, ns, Attribute, ExpandedName, QualName
 
 use self::Node::{IsElement, IsText};
 
+use func::{empty, Func, Lib};
+
 type Handle = usize;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Node {
     IsElement(Element),
     IsText(Text),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Text {
     value: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Element {
     element_name: String,
     attributes: HashMap<String, String>,
     is_func: bool,
+    func: Func,
     children: Vec<Handle>,
     qual_name: QualName,
 }
@@ -35,6 +38,7 @@ pub struct Parser {
     next_id: Handle,
     line: u64,
     nodes: HashMap<Handle, Node>,
+    lib: Lib,
 }
 
 impl Parser {
@@ -44,7 +48,7 @@ impl Parser {
         id
     }
 
-    pub fn new() -> Parser {
+    pub fn new(l: Lib) -> Parser {
         let mut new_nodes: HashMap<Handle, Node> = HashMap::new();
         new_nodes.insert(
             0,
@@ -52,6 +56,7 @@ impl Parser {
                 element_name: String::new(),
                 attributes: HashMap::new(),
                 is_func: false,
+                func: empty(),
                 children: Vec::new(),
                 qual_name: QualName::new(None, ns!(html), local_name!("")),
             }),
@@ -61,6 +66,7 @@ impl Parser {
             next_id: 1,
             line: 0,
             nodes: new_nodes,
+            lib: l,
         }
     }
 
@@ -90,7 +96,7 @@ impl TreeSink for Parser {
     type Output = Self;
 
     fn finish(self) -> Self {
-        println!("{:#?}", self.nodes);
+        println!("done");
         self
     }
 
@@ -122,10 +128,10 @@ impl TreeSink for Parser {
             element_name: name.local.to_string(),
             attributes: get_attributes(attrs),
             is_func: false,
+            func: empty(),
             children: Vec::new(),
             qual_name: name,
         };
-        println!("{:#?}", element);
         self.nodes.insert(id, IsElement(element));
         id
     }
@@ -158,9 +164,9 @@ impl TreeSink for Parser {
 
     fn append_based_on_parent_node(
         &mut self,
-        element: &Handle,
-        prev_element: &Handle,
-        child: NodeOrText<Handle>,
+        _element: &Handle,
+        _prev_element: &Handle,
+        _child: NodeOrText<Handle>,
     ) {
     }
 
@@ -189,7 +195,7 @@ impl TreeSink for Parser {
 
     fn set_quirks_mode(&mut self, _mode: QuirksMode) {}
 
-    fn append_before_sibling(&mut self, sibling: &Handle, new_node: NodeOrText<Handle>) {}
+    fn append_before_sibling(&mut self, _sibling: &Handle, _new_node: NodeOrText<Handle>) {}
 
     fn add_attrs_if_missing(&mut self, target: &Handle, attrs: Vec<Attribute>) {
         let mut revised_attributes = get_element(self.get_node(target)).attributes;
@@ -208,9 +214,9 @@ impl TreeSink for Parser {
         self.revise_node(IsElement(revised_element), *target);
     }
 
-    fn remove_from_parent(&mut self, target: &Handle) {}
+    fn remove_from_parent(&mut self, _target: &Handle) {}
 
-    fn reparent_children(&mut self, node: &Handle, new_parent: &Handle) {}
+    fn reparent_children(&mut self, _node: &Handle, _new_parent: &Handle) {}
 
     fn set_current_line(&mut self, line_number: u64) {
         self.line = line_number;
@@ -233,6 +239,6 @@ fn escape_default(s: &str) -> String {
 fn get_element(node: &Node) -> Element {
     match node {
         IsElement(e) => e.clone(),
-        _ => panic!("Node {:#?} is not an element"),
+        _ => panic!("Node is not an element"),
     }
 }
