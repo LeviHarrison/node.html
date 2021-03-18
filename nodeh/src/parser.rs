@@ -14,8 +14,8 @@ use func::{empty, Func, Lib};
 type Handle = usize;
 
 #[derive(Clone)]
-pub enum Node<'a> {
-    IsElement(Element<'a>),
+pub enum Node {
+    IsElement(Element),
     IsText(Text),
 }
 
@@ -25,30 +25,30 @@ pub struct Text {
 }
 
 #[derive(Clone)]
-pub struct Element<'a> {
+pub struct Element {
     element_name: String,
     attributes: HashMap<String, String>,
     is_func: bool,
-    func: &'a Func,
+    func: Func,
     children: Vec<Handle>,
     qual_name: QualName,
 }
 
-pub struct Parser<'a> {
+pub struct Parser {
     next_id: Handle,
     line: u64,
-    nodes: HashMap<Handle, Node<'a>>,
+    nodes: HashMap<Handle, Node>,
     lib: Lib,
 }
 
-impl Parser<'_> {
+impl Parser {
     fn get_id(&mut self) -> Handle {
         let id = self.next_id;
         self.next_id += 2;
         id
     }
 
-    pub fn new(l: Lib) -> Parser<'static> {
+    pub fn new(l: Lib) -> Parser {
         let mut new_nodes: HashMap<Handle, Node> = HashMap::new();
         new_nodes.insert(
             0,
@@ -56,7 +56,7 @@ impl Parser<'_> {
                 element_name: String::new(),
                 attributes: HashMap::new(),
                 is_func: false,
-                func: &empty(),
+                func: empty(),
                 children: Vec::new(),
                 qual_name: QualName::new(None, ns!(html), local_name!("")),
             }),
@@ -90,10 +90,10 @@ impl Parser<'_> {
         self.revise_node(IsElement(revised_parent), *parent)
     }
 
-    fn match_function(&self, element: &mut Element) {
+    fn match_function(&mut self, element: &mut Element) {
         for f in self.lib.iter() {
             if f.name == element.element_name {
-                element.func = f
+                element.func = f.clone()
             }
         }
     }
@@ -140,6 +140,7 @@ impl TreeSink for Parser {
             children: Vec::new(),
             qual_name: name,
         };
+        self.match_function(&mut element);
         self.nodes.insert(id, IsElement(element));
         id
     }
@@ -156,7 +157,6 @@ impl TreeSink for Parser {
         match child {
             AppendNode(n) => {
                 self.add_child(n, parent);
-                println!("Append node {} to {}", n, parent);
             }
             AppendText(t) => {
                 let id = self.get_id();
