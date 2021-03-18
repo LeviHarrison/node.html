@@ -11,7 +11,7 @@ use self::Node::{IsElement, IsText};
 
 use func::{empty, Func, Lib};
 
-type Handle = usize;
+pub type Handle = usize;
 
 #[derive(Clone)]
 pub enum Node {
@@ -26,18 +26,19 @@ pub struct Text {
 
 #[derive(Clone)]
 pub struct Element {
-    element_name: String,
-    attributes: HashMap<String, String>,
-    is_func: bool,
-    func: Func,
-    children: Vec<Handle>,
+    pub element_name: String,
+    pub attributes: HashMap<String, String>,
+    pub is_func: bool,
+    pub func: Func,
+    pub children: Vec<Handle>,
     qual_name: QualName,
 }
 
+#[derive(Clone)]
 pub struct Parser {
     next_id: Handle,
     line: u64,
-    nodes: HashMap<Handle, Node>,
+    pub nodes: HashMap<Handle, Node>,
     lib: Lib,
 }
 
@@ -93,6 +94,8 @@ impl Parser {
     fn match_function(&mut self, element: &mut Element) {
         for f in self.lib.iter() {
             if f.name == element.element_name {
+                println!("Matched function {} on line {}", f.name, self.line);
+                element.is_func = true;
                 element.func = f.clone()
             }
         }
@@ -104,7 +107,7 @@ impl TreeSink for Parser {
     type Output = Self;
 
     fn finish(self) -> Self {
-        println!("done");
+        println!("Finished Parsing!");
         self
     }
 

@@ -1,3 +1,4 @@
+use nodeh::executor;
 use nodeh::parser;
 
 use stdlib;
@@ -13,10 +14,11 @@ use html5ever::parse_document;
 
 fn main() {
     let sink = parser::Parser::new(load());
-    parse_document(sink, Default::default())
+    let tree = parse_document(sink, Default::default())
         .from_utf8()
         .from_file(Path::new("test.html"))
         .unwrap();
+    executor::execute(tree);
 }
 
 fn load() -> Lib {

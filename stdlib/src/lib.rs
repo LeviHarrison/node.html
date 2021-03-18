@@ -11,7 +11,7 @@ pub fn register() -> Lib {
     let mut lib = Vec::new();
 
     lib.push(Func {
-        name: String::from("Hello"),
+        name: String::from("hello"),
         args: HashMap::new(),
         handler: hello,
     });
