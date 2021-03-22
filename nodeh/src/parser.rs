@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::process::exit;
 
 use html5ever::tendril::*;
 use html5ever::tree_builder::{
@@ -9,7 +10,7 @@ use html5ever::{local_name, namespace_url, ns, Attribute, ExpandedName, QualName
 
 use self::Node::{IsElement, IsText};
 
-use func::{empty, Func, Lib};
+use func::{empty, Func, Lib, Argument};
 
 pub type Handle = usize;
 
@@ -30,6 +31,7 @@ pub struct Element {
     pub attributes: HashMap<String, String>,
     pub is_func: bool,
     pub func: Func,
+    pub matched_attributes: Vec<Argument>,
     pub children: Vec<Handle>,
     qual_name: QualName,
 }
@@ -58,6 +60,7 @@ impl Parser {
                 attributes: HashMap::new(),
                 is_func: false,
                 func: empty(),
+                matched_attributes: Vec::new(),
                 children: Vec::new(),
                 qual_name: QualName::new(None, ns!(html), local_name!("")),
             }),
@@ -96,8 +99,37 @@ impl Parser {
             if f.name == element.element_name {
                 println!("Matched function {} on line {}", f.name, self.line);
                 element.is_func = true;
-                element.func = f.clone()
+                element.func = f.clone();
+                self.check_args(element, f.clone())
             }
+        }
+    }
+    
+    fn check_args(&self, element: &mut Element, func: Func) {
+        let mut e = element.clone();
+
+        for (arg, spec) in func.args.into_iter() {
+            for (name, value) in e.attributes.clone().into_iter() {
+                if name == arg {
+                    element.matched_attributes.push(Argument {
+                        value: value,
+                        ..spec
+                    });
+                    e.attributes.remove(&name);
+                    continue
+                }
+            }
+
+            eprintln!("Missing argument {} for function {}", arg, func.name);
+            exit(1);
+        }
+
+        if e.attributes.len() > 0 {
+            for (name, _) in e.attributes.clone().into_iter() {
+                eprintln!("No argument {} in function {}", name, func.name)
+            }
+
+            exit(1);
         }
     }
 }
@@ -116,7 +148,7 @@ impl TreeSink for Parser {
             Cow::Borrowed("Bad DOCTYPE") => {}
             _ => {
                 eprintln!("Error Parsing on line {}", self.line);
-                std::process::exit(1)
+                exit(1)
             }
         }
     }
@@ -140,6 +172,7 @@ impl TreeSink for Parser {
             attributes: get_attributes(attrs),
             is_func: false,
             func: empty(),
+            matched_attributes: Vec::new(),
             children: Vec::new(),
             qual_name: name,
         };
@@ -192,7 +225,7 @@ impl TreeSink for Parser {
                 "DOCTYPE {} is invalid, node.html is required",
                 name.to_string()
             );
-            std::process::exit(1);
+            exit(1);
         }
     }
 
