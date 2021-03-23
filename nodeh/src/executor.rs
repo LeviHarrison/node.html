@@ -14,7 +14,7 @@ fn run(tree: Parser, id: Handle) {
     match node {
         IsElement(e) => {
             if e.is_func {
-                (e.func.handler)(e.func.args.clone()).unwrap();
+                (e.func.handler)(e.matched_attributes.clone()).unwrap();
             }
 
             for child in e.children.clone() {

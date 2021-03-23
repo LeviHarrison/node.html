@@ -3,9 +3,10 @@ use std::result::Result;
 
 pub type Handler = fn(args: HashMap<String, Argument>) -> Result<i32, String>;
 
+pub type Lib = HashMap<String, Func>;
+
 #[derive(Clone)]
 pub struct Func {
-    pub name: String,
     pub args: HashMap<String, Argument>,
     pub handler: Handler,
 }
@@ -16,16 +17,19 @@ pub struct Argument {
     pub value: String,
 }
 
-pub type Lib = Vec<Func>;
 
-pub fn empty() -> Func {
+pub fn get_arg(name: &str, args: HashMap<String, Argument>) -> String {
+    args.get(name).expect("Very very bad error this should not happen").value.clone()
+}
+
+
+pub fn empty_func() -> Func {
     Func {
-        name: String::new(),
         args: HashMap::new(),
-        handler: empty_func,
+        handler: empty_handler,
     }
 }
 
-fn empty_func(_args: HashMap<String, Argument>) -> Result<i32, String> {
+fn empty_handler(_args: HashMap<String, Argument>) -> Result<i32, String> {
     Ok(0)
 }

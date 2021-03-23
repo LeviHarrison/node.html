@@ -9,6 +9,7 @@ use html5ever::tendril::TendrilSink;
 
 use std::default::Default;
 use std::path::Path;
+use std::collections::HashMap;
 
 use html5ever::parse_document;
 
@@ -22,9 +23,9 @@ fn main() {
 }
 
 fn load() -> Lib {
-    let mut functions: Lib = Vec::new();
+    let mut functions: Lib = HashMap::new();
 
-    functions.append(&mut stdlib::register());
+    functions.extend(stdlib::register().into_iter());
 
     functions
 }

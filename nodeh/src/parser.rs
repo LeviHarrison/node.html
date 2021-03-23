@@ -10,7 +10,7 @@ use html5ever::{local_name, namespace_url, ns, Attribute, ExpandedName, QualName
 
 use self::Node::{IsElement, IsText};
 
-use func::{empty, Func, Lib, Argument};
+use func::{empty_func, Func, Lib, Argument};
 
 pub type Handle = usize;
 
@@ -31,7 +31,7 @@ pub struct Element {
     pub attributes: HashMap<String, String>,
     pub is_func: bool,
     pub func: Func,
-    pub matched_attributes: Vec<Argument>,
+    pub matched_attributes: HashMap<String, Argument>,
     pub children: Vec<Handle>,
     qual_name: QualName,
 }
@@ -55,15 +55,7 @@ impl Parser {
         let mut new_nodes: HashMap<Handle, Node> = HashMap::new();
         new_nodes.insert(
             0,
-            IsElement(Element {
-                element_name: String::new(),
-                attributes: HashMap::new(),
-                is_func: false,
-                func: empty(),
-                matched_attributes: Vec::new(),
-                children: Vec::new(),
-                qual_name: QualName::new(None, ns!(html), local_name!("")),
-            }),
+            IsElement(Element::new()),
         );
 
         Parser {
@@ -95,41 +87,56 @@ impl Parser {
     }
 
     fn match_function(&mut self, element: &mut Element) {
-        for f in self.lib.iter() {
-            if f.name == element.element_name {
-                println!("Matched function {} on line {}", f.name, self.line);
+        match self.lib.get(&element.element_name) {
+            Some(f) => {
+                println!("Matched function {} on line {}", element.element_name, self.line);
                 element.is_func = true;
                 element.func = f.clone();
                 self.check_args(element, f.clone())
-            }
+            },
+            None => {}
         }
     }
     
     fn check_args(&self, element: &mut Element, func: Func) {
         let mut e = element.clone();
 
-        for (arg, spec) in func.args.into_iter() {
+        'arg: for (arg, spec) in func.args.into_iter() {
             for (name, value) in e.attributes.clone().into_iter() {
                 if name == arg {
-                    element.matched_attributes.push(Argument {
+                    element.matched_attributes.insert(arg, Argument {
                         value: value,
                         ..spec
                     });
                     e.attributes.remove(&name);
-                    continue
+                    continue 'arg
                 }
             }
 
-            eprintln!("Missing argument {} for function {}", arg, func.name);
+            eprintln!("Missing argument '{}' for function {}", arg, element.element_name);
             exit(1);
         }
 
         if e.attributes.len() > 0 {
             for (name, _) in e.attributes.clone().into_iter() {
-                eprintln!("No argument {} in function {}", name, func.name)
+                eprintln!("No argument '{}' in function {}", name, element.element_name)
             }
 
             exit(1);
+        }
+    }
+}
+
+impl Element {
+    pub fn new() -> Element {
+        Element {
+            element_name: String::new(),
+            attributes: HashMap::new(),
+            is_func: false,
+            func: empty_func(),
+            matched_attributes: HashMap::new(),
+            children: Vec::new(),
+            qual_name: QualName::new(None, ns!(html), local_name!("")),
         }
     }
 }
@@ -170,11 +177,8 @@ impl TreeSink for Parser {
         let mut element = Element {
             element_name: name.local.to_string(),
             attributes: get_attributes(attrs),
-            is_func: false,
-            func: empty(),
-            matched_attributes: Vec::new(),
-            children: Vec::new(),
             qual_name: name,
+            ..Element::new()
         };
         self.match_function(&mut element);
         self.nodes.insert(id, IsElement(element));
