@@ -17,11 +17,12 @@ pub struct Argument {
     pub value: String,
 }
 
-
 pub fn get_arg(name: &str, args: HashMap<String, Argument>) -> String {
-    args.get(name).expect("Very very bad error this should not happen").value.clone()
+    args.get(name)
+        .expect("Expected arg could not be found")
+        .value
+        .clone()
 }
-
 
 pub fn empty_func() -> Func {
     Func {
