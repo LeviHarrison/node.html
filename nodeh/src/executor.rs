@@ -1,4 +1,5 @@
-use crate::parser::{Handle, Node, Parser};
+use core::{Handle, Node};
+use parser::Parser;
 use Node::IsElement;
 
 pub fn execute(tree: Parser) {
@@ -14,7 +15,7 @@ fn run(tree: Parser, id: Handle) {
     match node {
         IsElement(e) => {
             if e.is_func {
-                (e.func.handler)(e.matched_attributes.clone()).unwrap();
+                (e.func.handler)(e.matched_attributes.clone(), Vec::new()).unwrap();
             }
 
             for child in e.children.clone() {

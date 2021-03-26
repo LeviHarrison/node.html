@@ -6,35 +6,10 @@ use html5ever::tendril::*;
 use html5ever::tree_builder::{
     AppendNode, AppendText, ElementFlags, NodeOrText, QuirksMode, TreeSink,
 };
-use html5ever::{local_name, namespace_url, ns, Attribute, ExpandedName, QualName};
+use html5ever::{Attribute, ExpandedName, QualName};
 
-use self::Node::{IsElement, IsText};
-
-use func::{empty_func, Func, Lib, Argument};
-
-pub type Handle = usize;
-
-#[derive(Clone)]
-pub enum Node {
-    IsElement(Element),
-    IsText(Text),
-}
-
-#[derive(Clone)]
-pub struct Text {
-    value: String,
-}
-
-#[derive(Clone)]
-pub struct Element {
-    pub element_name: String,
-    pub attributes: HashMap<String, String>,
-    pub is_func: bool,
-    pub func: Func,
-    pub matched_attributes: HashMap<String, Argument>,
-    pub children: Vec<Handle>,
-    qual_name: QualName,
-}
+use core::Node::{IsElement, IsText};
+use core::{Argument, Element, Func, Handle, Lib, Node, Text};
 
 #[derive(Clone)]
 pub struct Parser {
@@ -53,10 +28,7 @@ impl Parser {
 
     pub fn new(l: Lib) -> Parser {
         let mut new_nodes: HashMap<Handle, Node> = HashMap::new();
-        new_nodes.insert(
-            0,
-            IsElement(Element::new()),
-        );
+        new_nodes.insert(0, IsElement(Element::new()));
 
         Parser {
             next_id: 1,
@@ -89,54 +61,48 @@ impl Parser {
     fn match_function(&mut self, element: &mut Element) {
         match self.lib.get(&element.element_name) {
             Some(f) => {
-                println!("Matched function {} on line {}", element.element_name, self.line);
+                println!(
+                    "Matched function {} on line {}",
+                    element.element_name, self.line
+                );
                 element.is_func = true;
                 element.func = f.clone();
                 self.check_args(element, f.clone())
-            },
+            }
             None => {}
         }
     }
-    
+
     fn check_args(&self, element: &mut Element, func: Func) {
         let mut e = element.clone();
 
         'arg: for (arg, spec) in func.args.into_iter() {
             for (name, value) in e.attributes.clone().into_iter() {
                 if name == arg {
-                    element.matched_attributes.insert(arg, Argument {
-                        value: value,
-                        ..spec
-                    });
+                    element
+                        .matched_attributes
+                        .insert(arg, Argument { value, ..spec });
                     e.attributes.remove(&name);
-                    continue 'arg
+                    continue 'arg;
                 }
             }
 
-            eprintln!("Missing argument '{}' for function {}", arg, element.element_name);
+            eprintln!(
+                "Missing argument '{}' for function {}",
+                arg, element.element_name
+            );
             exit(1);
         }
 
         if e.attributes.len() > 0 {
             for (name, _) in e.attributes.clone().into_iter() {
-                eprintln!("No argument '{}' in function {}", name, element.element_name)
+                eprintln!(
+                    "No argument '{}' in function {}",
+                    name, element.element_name
+                )
             }
 
             exit(1);
-        }
-    }
-}
-
-impl Element {
-    pub fn new() -> Element {
-        Element {
-            element_name: String::new(),
-            attributes: HashMap::new(),
-            is_func: false,
-            func: empty_func(),
-            matched_attributes: HashMap::new(),
-            children: Vec::new(),
-            qual_name: QualName::new(None, ns!(html), local_name!("")),
         }
     }
 }

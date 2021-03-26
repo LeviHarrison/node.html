@@ -3,5 +3,7 @@
 members = [
     "nodeh",
 		"stdlib",
-		"func"
+		"loader",
+		"parser",
+		"core"
 ]

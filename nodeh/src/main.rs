@@ -1,15 +1,10 @@
+use loader::load;
 use nodeh::executor;
-use nodeh::parser;
-
-use stdlib;
-
-use func::Lib;
+use parser;
 
 use html5ever::tendril::TendrilSink;
 
-use std::default::Default;
 use std::path::Path;
-use std::collections::HashMap;
 
 use html5ever::parse_document;
 
@@ -20,12 +15,4 @@ fn main() {
         .from_file(Path::new("test.html"))
         .unwrap();
     executor::execute(tree);
-}
-
-fn load() -> Lib {
-    let mut functions: Lib = HashMap::new();
-
-    functions.extend(stdlib::register().into_iter());
-
-    functions
 }
