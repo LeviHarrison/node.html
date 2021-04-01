@@ -15,7 +15,11 @@ fn run(tree: Parser, id: Handle) {
     match node {
         IsElement(e) => {
             if e.is_func {
-                (e.func.handler)(e.matched_attributes.clone(), Vec::new()).unwrap();
+                (e.func.handler)(
+                    e.matched_attributes.clone(),
+                    handles_to_nodes(e.children.clone(), tree.clone()),
+                )
+                .unwrap();
             }
 
             for child in e.children.clone() {
@@ -24,4 +28,18 @@ fn run(tree: Parser, id: Handle) {
         }
         _ => {}
     }
+}
+
+fn handles_to_nodes(handles: Vec<Handle>, tree: Parser) -> Vec<Node> {
+    let mut nodes: Vec<Node> = Vec::new();
+    for handle in handles {
+        nodes.push(
+            tree.nodes
+                .get(&handle)
+                .expect(format!("No element {} found", handle).as_str())
+                .clone(),
+        )
+    }
+
+    nodes
 }
