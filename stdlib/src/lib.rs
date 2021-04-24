@@ -1,4 +1,4 @@
-use core::{get_arg, Argument, Func, Lib, Node};
+use core::{get_arg, Accepted, Argument, Func, Lib, Node};
 use Node::{IsElement, IsText};
 
 use std::collections::HashMap;
@@ -31,8 +31,8 @@ pub fn register() -> Lib {
     lib.insert(
         String::from("hello"),
         Func {
-            args: HashMap::new(),
             handler: hello,
+            ..Func::new()
         },
     );
 
@@ -50,14 +50,20 @@ pub fn register() -> Lib {
         Func {
             args,
             handler: print,
+            ..Func::new()
         },
     );
 
     lib.insert(
         String::from("testbody"),
         Func {
-            args: HashMap::new(),
             handler: test_body,
+            require_body_types: true,
+            accepted_body: Accepted {
+                accept_text: true,
+                ..Accepted::new()
+            },
+            ..Func::new()
         },
     );
 

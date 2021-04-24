@@ -105,6 +105,54 @@ impl Parser {
             exit(1);
         }
     }
+
+    fn check_text_allowed(&mut self, parent_id: &Handle) {
+        let parent = get_element(self.get_node(parent_id));
+
+        if parent.is_func && parent.func.require_body_types {
+            if !parent.func.accepted_body.accept_text {
+                eprintln!(
+                    "Parent function {} does not accept text",
+                    parent.element_name
+                );
+                exit(1);
+            }
+        }
+    }
+
+    fn check_element_allowed(&mut self, child_id: &Handle, parent_id: &Handle) {
+        let parent = get_element(self.get_node(parent_id));
+        let child = get_element(self.get_node(child_id));
+        if parent.is_func && parent.func.require_body_types {
+            println!("{}, {}", child.element_name, child.is_func);
+            if child.is_func {
+                println!("is func");
+                for f in parent.func.accepted_body.accepted_funcs {
+                    if child.element_name == f {
+                        ();
+                    }
+                }
+
+                eprintln!(
+                    "Parent function {} does not accept function {}",
+                    parent.element_name, child.element_name
+                );
+                exit(1);
+            }
+
+            for e in parent.func.accepted_body.accepted_elements {
+                if child.element_name == e {
+                    ();
+                }
+
+                eprintln!(
+                    "Parent function {} does not accept function {}",
+                    parent.element_name, child.element_name
+                );
+                exit(1);
+            }
+        }
+    }
 }
 
 impl TreeSink for Parser {
@@ -162,9 +210,12 @@ impl TreeSink for Parser {
     fn append(&mut self, parent: &Handle, child: NodeOrText<Handle>) {
         match child {
             AppendNode(n) => {
+                self.check_element_allowed(parent, &n);
                 self.add_child(n, parent);
             }
             AppendText(t) => {
+                self.check_text_allowed(parent);
+
                 let id = self.get_id();
                 let text = Text {
                     value: escape_default(&t),

@@ -33,7 +33,7 @@ impl Element {
             element_name: String::new(),
             attributes: HashMap::new(),
             is_func: false,
-            func: Func::new(),
+            func: empty_func(),
             matched_attributes: HashMap::new(),
             children: Vec::new(),
             qual_name: QualName::new(None, ns!(html), local_name!("")),
@@ -48,10 +48,14 @@ pub type Elements = usize;
 pub type Lib = HashMap<String, Func>;
 
 #[derive(Clone)]
+pub enum Passed {
+    Handler,
+    Text,
+}
+
+#[derive(Clone)]
 pub struct Func {
     pub args: HashMap<String, Argument>,
-    pub require_body_types: bool,
-    pub accepted_body: Accepted,
     pub handler: Handler,
 }
 
@@ -61,39 +65,18 @@ pub struct Argument {
     pub value: String,
 }
 
-#[derive(Clone)]
-pub struct Accepted {
-    pub accept_text: bool,
-    pub accepted_funcs: Vec<String>,
-    pub accepted_elements: Vec<String>,
-}
-
-impl Func {
-    pub fn new() -> Func {
-        Func {
-            args: HashMap::new(),
-            require_body_types: false,
-            accepted_body: Accepted::new(),
-            handler: empty_handler,
-        }
-    }
-}
-
-impl Accepted {
-    pub fn new() -> Accepted {
-        Accepted {
-            accept_text: true,
-            accepted_funcs: Vec::new(),
-            accepted_elements: Vec::new(),
-        }
-    }
-}
-
 pub fn get_arg(name: &str, args: HashMap<String, Argument>) -> String {
     args.get(name)
         .expect("Expected arg could not be found")
         .value
         .clone()
+}
+
+pub fn empty_func() -> Func {
+    Func {
+        args: HashMap::new(),
+        handler: empty_handler,
+    }
 }
 
 fn empty_handler(_args: HashMap<String, Argument>, _body: Vec<Node>) -> Result<i32, String> {
