@@ -15,6 +15,7 @@ fn run(tree: Parser, id: Handle) {
     match node {
         IsElement(e) => {
             if e.is_func {
+                // TODO consider possibly not passing children if not required by func
                 (e.func.handler)(
                     e.matched_attributes.clone(),
                     handles_to_nodes(e.children.clone(), tree.clone()),
@@ -22,8 +23,13 @@ fn run(tree: Parser, id: Handle) {
                 .unwrap();
             }
 
-            for child in e.children.clone() {
-                run(tree.clone(), child)
+            if !(e.func.accepted_body.accept_text
+                || e.func.accepted_body.accepted_funcs.len() > 0
+                || e.func.accepted_body.accepted_elements.len() > 0)
+            {
+                for child in e.children.clone() {
+                    run(tree.clone(), child)
+                }
             }
         }
         _ => {}
